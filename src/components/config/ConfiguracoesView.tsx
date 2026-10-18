@@ -11,6 +11,7 @@ import {
   CalendarDays,
   CreditCard,
   Banknote,
+  QrCode,
 } from "lucide-react";
 
 export const ConfiguracoesView: React.FC = () => {
@@ -38,9 +39,16 @@ export const ConfiguracoesView: React.FC = () => {
     if (!cfg) return;
     setSaving(true);
     try {
-      const salvo = await apiService.atualizarConfiguracao(cfg);
+      const chave = cfg.chavePix?.trim() ?? "";
+      const salvo = await apiService.atualizarConfiguracao({
+        ...cfg,
+        chavePix: chave === "" ? null : chave,
+      });
       setCfg(salvo);
-      toast.success("Preços atualizados com sucesso!", "Configuração Salva");
+      toast.success(
+        "Configurações atualizadas com sucesso!",
+        "Configuração Salva",
+      );
     } catch (e) {
       toast.error(getErrorMessage(e), "Erro ao Salvar");
     } finally {
@@ -116,6 +124,37 @@ export const ConfiguracoesView: React.FC = () => {
             value={cfg.descontoQuarta}
             onChange={setNum("descontoQuarta")}
           />
+
+          {/* Chave PIX (enviada pelo robô ao cliente) */}
+          <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                <QrCode className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <label
+                  htmlFor="input-chave-pix"
+                  className="block font-bold text-slate-900 text-sm"
+                >
+                  Chave PIX
+                </label>
+                <div className="text-xs text-slate-500">
+                  Enviada pelo robô ao cliente que escolhe PIX. Deixe vazio se
+                  não aceitar PIX.
+                </div>
+              </div>
+            </div>
+            <input
+              id="input-chave-pix"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={cfg.chavePix ?? ""}
+              onChange={(e) => setCfg({ ...cfg, chavePix: e.target.value })}
+              placeholder="ex.: 83999998888 ou CNPJ"
+              className="input tnum w-full sm:w-64"
+            />
+          </div>
         </div>
 
         {/* Toggle da promoção */}
@@ -160,7 +199,7 @@ export const ConfiguracoesView: React.FC = () => {
           className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-md shadow-blue-600/20 hover:shadow-md transition disabled:opacity-60"
         >
           <Save className="w-4 h-4" />
-          {saving ? "Salvando..." : "Salvar Preços"}
+          {saving ? "Salvando..." : "Salvar Configurações"}
         </button>
       </div>
     </div>

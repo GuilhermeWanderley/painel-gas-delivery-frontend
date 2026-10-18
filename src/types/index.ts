@@ -96,6 +96,8 @@ export interface Configuracao {
   precoGasPovo: number;
   descontoQuarta: number;
   promocaoQuartaAtiva: boolean;
+  /** Chave PIX pública enviada pelo robô ao cliente. Vazio = null. */
+  chavePix: string | null;
 }
 
 // ===================== ATENDIMENTO HUMANO (transbordo) =====================
