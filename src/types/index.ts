@@ -11,6 +11,14 @@ export type OrderType = "NORMAL" | "GAS_DO_POVO";
 export type PaymentMethod =
   "DINHEIRO" | "CARTAO_CREDITO" | "CARTAO_DEBITO" | "PIX";
 
+export type StatusPagamento =
+  | "NAO_APLICAVEL"
+  | "AGUARDANDO"
+  | "COMPROVANTE_ENVIADO"
+  | "CONFIRMADO"
+  | "A_ESTORNAR"
+  | "ESTORNADO";
+
 export interface Cliente {
   id: number;
   telefone: string;
@@ -34,6 +42,7 @@ export interface Pedido {
   status: OrderStatus;
   tipoPedido: OrderType;
   formaPagamento: PaymentMethod;
+  statusPagamento: StatusPagamento;
   precisaTrocoPara?: number | null;
   enderecoEntrega: string;
   valorTotal: number;

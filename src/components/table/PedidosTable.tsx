@@ -7,7 +7,7 @@ import {
   formatDateTime,
   STATUS_CONFIG,
 } from "../../utils/formatters";
-import { PaymentBadge } from "../common/PaymentBadge";
+import { PaymentBadge, PaymentStatusBadge } from "../common/PaymentBadge";
 import {
   Search,
   Download,
@@ -73,6 +73,7 @@ export const PedidosTable: React.FC<PedidosTableProps> = ({
       "Tipo",
       "Status",
       "Forma Pagamento",
+      "Status Pagamento",
       "Valor Total",
       "Entregador",
       "Endereço",
@@ -87,6 +88,7 @@ export const PedidosTable: React.FC<PedidosTableProps> = ({
       p.tipoPedido,
       p.status,
       p.formaPagamento,
+      p.statusPagamento ?? "",
       p.valorTotal.toFixed(2),
       `"${p.entregador?.nome || ""}"`,
       `"${p.enderecoEntrega.replace(/"/g, '""')}"`,
@@ -255,8 +257,9 @@ export const PedidosTable: React.FC<PedidosTableProps> = ({
                       <div className="font-bold text-slate-900">
                         {formatCurrency(pedido.valorTotal)}
                       </div>
-                      <div className="mt-1">
+                      <div className="mt-1 flex flex-col items-start gap-1">
                         <PaymentBadge forma={pedido.formaPagamento} />
+                        <PaymentStatusBadge status={pedido.statusPagamento} />
                       </div>
                       {pedido.precisaTrocoPara && (
                         <div className="text-[10px] text-slate-500 font-medium mt-0.5">

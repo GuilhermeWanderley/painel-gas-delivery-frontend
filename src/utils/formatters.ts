@@ -1,4 +1,9 @@
-import type { OrderStatus, OrderType, PaymentMethod } from "../types";
+import type {
+  OrderStatus,
+  OrderType,
+  PaymentMethod,
+  StatusPagamento,
+} from "../types";
 
 export function formatCurrency(value?: number | null): string {
   if (value === undefined || value === null) return "R$ 0,00";
@@ -171,6 +176,33 @@ export const PAYMENT_METHOD_CONFIG: Record<
   PIX: {
     label: "PIX",
     badgeClass: "bg-slate-50 text-slate-700 border-slate-200",
+  },
+};
+
+/** Andamento do pagamento. NAO_APLICAVEL não tem selo (não é exibido). */
+export const PAYMENT_STATUS_CONFIG: Record<
+  Exclude<StatusPagamento, "NAO_APLICAVEL">,
+  { label: string; badgeClass: string }
+> = {
+  AGUARDANDO: {
+    label: "Aguardando PIX",
+    badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
+  },
+  COMPROVANTE_ENVIADO: {
+    label: "Comprovante enviado",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  CONFIRMADO: {
+    label: "Pago",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  A_ESTORNAR: {
+    label: "Estornar",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
+  },
+  ESTORNADO: {
+    label: "Estornado",
+    badgeClass: "bg-slate-100 text-slate-500 border-slate-200",
   },
 };
 

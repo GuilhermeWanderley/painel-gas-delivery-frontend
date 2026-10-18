@@ -6,7 +6,7 @@ import {
   formatCPF,
   formatTimeAgo,
 } from "../../utils/formatters";
-import { PaymentBadge } from "../common/PaymentBadge";
+import { PaymentBadge, PaymentStatusBadge } from "../common/PaymentBadge";
 import {
   User,
   MapPin,
@@ -156,18 +156,19 @@ export const PedidoCard: React.FC<PedidoCardProps> = ({
       )}
 
       {/* Financeiro e Pagamento */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100 mb-3">
-        <div>
+      <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 mb-3">
+        <div className="shrink-0">
           <span className="label block">TOTAL</span>
           <span className="tnum font-bold text-slate-900 text-[16px] leading-tight">
             {formatCurrency(pedido.valorTotal)}
           </span>
         </div>
 
-        <div className="text-right">
+        <div className="min-w-0 flex flex-col items-end gap-1 text-right">
           <PaymentBadge forma={pedido.formaPagamento} />
+          <PaymentStatusBadge status={pedido.statusPagamento} />
           {pedido.precisaTrocoPara && (
-            <div className="tnum text-[11px] font-medium text-slate-500 mt-1 flex items-center justify-end gap-1">
+            <div className="tnum text-[11px] font-medium text-slate-500 flex items-center justify-end gap-1">
               <Banknote className="w-3 h-3 text-slate-400" />
               Troco p/ {formatCurrency(pedido.precisaTrocoPara)}
             </div>
