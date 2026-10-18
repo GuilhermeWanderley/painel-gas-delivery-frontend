@@ -1,0 +1,459 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   DESIGN SYSTEM — Binho do Gás · Painel de Gestão
+   Estética SaaS minimalista (Linear · Stripe · shadcn/ui)
+
+   Diretrizes:
+   · Fonte Inter · antialiased · tabular-nums em números
+   · Títulos letter-spacing -0.02em · cor #0f172a
+   · Fundo #f8fafc · bordas 1px solid #e2e8f0 · sombra 0 1px 2px rgba(0,0,0,.03)
+   · Sem gradientes · sem translateY/scale · sem emoji
+   · Cor de marca (azul) NÃO é usada em preenchimentos de ação.
+     Ações primárias usam Slate 800 (#1e293b).
+   ========================================================================== */
+
+@theme {
+  /* --- Superfícies e neutros (Slate) --- */
+  --color-canvas: #f8fafc;
+  --color-surface: #ffffff;
+  --color-sunken: #f1f5f9;
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+  --color-ink: #0f172a;
+  --color-ink-soft: #64748b;
+  --color-ink-faint: #94a3b8;
+
+  /* --- Marca: reservada a indicadores ativos --- */
+  --color-brand: #2563eb;
+  --color-brand-hover: #1d4ed8;
+  --color-brand-soft: #eff6ff;
+  --color-brand-line: #bfdbfe;
+
+  /* --- Semânticas (sucesso / aviso / perigo) --- */
+  --color-ok: #059669;
+  --color-ok-soft: #ecfdf5;
+  --color-ok-line: #a7f3d0;
+  --color-warn: #92400e;
+  --color-warn-soft: #fef3c7;
+  --color-warn-line: #fde68a;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fef2f2;
+  --color-danger-line: #fecaca;
+
+  /* --- Raios: travados em 5–10px --- */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 10px;
+  --radius-2xl: 10px;
+  --radius-3xl: 10px;
+
+  /* --- Sombra mínima única: 0 1px 2px rgba(0,0,0,.03) --- */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-xl: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-2xl: 0 1px 2px rgba(0, 0, 0, 0.03);
+
+  /* --- Tipografia --- */
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Títulos com tracking fechado */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    margin: 0;
+    color: var(--color-ink);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  /* Números alinhados: preços, CPFs, telefones, horários, IDs e contadores */
+  table,
+  time,
+  [data-numeric],
+  .tnum,
+  .tabular-nums,
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Ícones Lucide: traço 1.75 e tamanho padrão de 17px (16–18px) */
+  .lucide {
+    width: 17px;
+    height: 17px;
+    stroke-width: 1.75;
+    flex-shrink: 0;
+  }
+
+  /* Foco visível e sóbrio */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  button {
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 13px;
+  }
+}
+
+/* ==========================================================================
+   COMPONENTES
+   ========================================================================== */
+
+@layer components {
+  /* ---------- Superfícies ---------- */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+  }
+  .card-hover:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  /* ---------- Botões ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Ação primária = Slate 800 fosco (sem azul vibrante) */
+  .btn-primary {
+    background: #1e293b;
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #0f172a;
+  }
+
+  .btn-secondary {
+    background: var(--color-surface);
+    border-color: var(--color-line);
+    color: #334155;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-canvas);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-ink-soft);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-sunken);
+    color: var(--color-ink);
+  }
+
+  /* Ação destrutiva = vermelho pastel */
+  .btn-danger {
+    background: var(--color-danger-soft);
+    border-color: var(--color-danger-line);
+    color: var(--color-danger);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: #fee2e2;
+  }
+
+  /* Botão de ícone do topo: 32×32, radius 6px, sem pílula */
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--color-surface);
+    border-color: var(--color-line);
+    border-radius: var(--radius-sm);
+    color: var(--color-ink-soft);
+  }
+  .btn-icon:hover:not(:disabled) {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+  }
+
+  /* Seleção neutra (genérico) */
+  .is-active {
+    background: var(--color-sunken);
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+  }
+
+  /* ---------- Abas do header (indicador de linha inferior) ---------- */
+  .tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 56px;
+    padding: 0 12px;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--color-ink-soft);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      color 150ms,
+      border-color 150ms;
+  }
+  .tab:hover {
+    color: var(--color-ink);
+  }
+  .tab-active {
+    color: var(--color-ink);
+    font-weight: 600;
+    border-bottom-color: var(--color-ink);
+  }
+
+  /* ---------- Botões de filtro ---------- */
+  .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 6px 12px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: #475569;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms;
+  }
+  .filter-btn:hover {
+    background: var(--color-canvas);
+  }
+  .filter-btn-active {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: #fff;
+  }
+  .filter-btn-active:hover {
+    background: #1e293b;
+  }
+
+  /* ---------- Alerta âmbar pastel ---------- */
+  .alert-warn {
+    background: var(--color-warn-soft);
+    border-bottom: 1px solid var(--color-warn-line);
+    color: var(--color-warn);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 16px;
+  }
+
+  /* ---------- Selos ---------- */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 8px;
+    border: 1px solid var(--color-line);
+    border-radius: 5px;
+    background: var(--color-sunken);
+    color: #334155;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-brand {
+    background: var(--color-brand-soft);
+    border-color: var(--color-brand-line);
+    color: var(--color-brand);
+  }
+  .badge-purple {
+    background: #f3e8ff;
+    border-color: #e9d5ff;
+    color: #6b21a8;
+  }
+  .badge-ok {
+    background: var(--color-ok-soft);
+    border-color: var(--color-ok-line);
+    color: var(--color-ok);
+  }
+  .badge-warn {
+    background: var(--color-warn-soft);
+    border-color: var(--color-warn-line);
+    color: var(--color-warn);
+  }
+  .badge-danger {
+    background: var(--color-danger-soft);
+    border-color: var(--color-danger-line);
+    color: var(--color-danger);
+  }
+  .badge-neutral {
+    background: var(--color-surface);
+    border-color: var(--color-line);
+    color: var(--color-ink-soft);
+  }
+
+  /* ---------- Campos ---------- */
+  .input {
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-size: 13px;
+    outline: none;
+    transition:
+      background-color 150ms,
+      border-color 150ms,
+      box-shadow 150ms;
+  }
+  .input::placeholder {
+    color: var(--color-ink-faint);
+  }
+  .input:focus {
+    background: var(--color-surface);
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.06);
+  }
+
+  /* ---------- Kanban ---------- */
+  .kanban-col {
+    background: var(--color-sunken);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+  }
+  .kanban-count {
+    background: var(--color-line);
+    color: #334155;
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .kanban-empty {
+    background: transparent;
+    border: 1px dashed var(--color-line-strong);
+    border-radius: var(--radius-md);
+    color: var(--color-ink-faint);
+  }
+
+  /* ---------- Cabeçalho de seção ---------- */
+  .page-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+  }
+  .page-subtitle {
+    font-size: 12px;
+    color: var(--color-ink-soft);
+  }
+  .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  /* ---------- Divisores ---------- */
+  .divider {
+    border-top: 1px solid var(--color-line);
+  }
+}
+
+/* ==========================================================================
+   SCROLLBAR DISCRETA
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: var(--radius-sm);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-faint);
+}
+
+/* ==========================================================================
+   IMPRESSÃO (relatório de caixa)
+   ========================================================================== */
+
+@media print {
+  header,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    font-size: 12pt;
+  }
+  .card {
+    border-color: #cbd5e1;
+    box-shadow: none;
+  }
+}

@@ -1,0 +1,213 @@
+import React, { useState } from "react";
+import { Bike, X, User, Phone, CheckCircle } from "lucide-react";
+import { useLockBodyScroll } from "../../utils/useLockBodyScroll";
+
+interface CadastrarEntregadorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (data: { nome: string; telefone: string }) => Promise<void>;
+}
+
+export const CadastrarEntregadorModal: React.FC<
+  CadastrarEntregadorModalProps
+> = ({ isOpen, onClose, onConfirm }) => {
+  useLockBodyScroll(isOpen);
+
+  const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  if (!isOpen) return null;
+
+  const handleNomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (/\d/.test(val)) {
+      setErrorMsg(
+        "No campo Nome Completo não é permitida a digitação de números.",
+      );
+      setNome(val.replace(/\d/g, ""));
+      return;
+    }
+    if (errorMsg) {
+      setErrorMsg("");
+    }
+    setNome(val);
+  };
+
+  // Máscara simples para telefone brasileiro: (XX) 9XXXX-XXXX
+  const handleTelefoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value.replace(/\D/g, "");
+    if (val.length > 11) val = val.substring(0, 11);
+
+    if (val.length <= 2) {
+      setTelefone(val ? `(${val}` : "");
+    } else if (val.length <= 7) {
+      setTelefone(`(${val.slice(0, 2)}) ${val.slice(2)}`);
+    } else {
+      setTelefone(`(${val.slice(0, 2)}) ${val.slice(2, 7)}-${val.slice(7)}`);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    const nomeTrimmed = nome.trim();
+
+    if (!nomeTrimmed) {
+      setErrorMsg("Por favor, informe o nome do entregador.");
+      return;
+    }
+
+    if (/\d/.test(nome)) {
+      setErrorMsg(
+        "No campo Nome Completo não é permitida a digitação de números.",
+      );
+      return;
+    }
+
+    // Validação de apenas letras e caracteres válidos de nome
+    if (!/^[a-zA-ZÀ-ÿ\s'´`^~-]+$/.test(nomeTrimmed)) {
+      setErrorMsg("O nome completo deve conter apenas letras.");
+      return;
+    }
+
+    // Validação de nome e sobrenome (mínimo duas palavras)
+    const partesNome = nomeTrimmed.split(/\s+/).filter(Boolean);
+    if (partesNome.length < 2) {
+      setErrorMsg(
+        "Por favor, informe o nome completo (nome e sobrenome, ex: Carlos Silva).",
+      );
+      return;
+    }
+
+    if (partesNome.some((parte) => parte.length < 2)) {
+      setErrorMsg("Cada parte do nome deve conter pelo menos 2 letras.");
+      return;
+    }
+
+    const digitsOnly = telefone.replace(/\D/g, "");
+    if (digitsOnly.length < 10) {
+      setErrorMsg("Informe um telefone válido com DDD (mínimo 10 dígitos).");
+      return;
+    }
+
+    // A API espera o formato com 55 ou número completo (ex: 5581988887777)
+    const formattedToApi = digitsOnly.startsWith("55")
+      ? digitsOnly
+      : `55${digitsOnly}`;
+
+    try {
+      setSubmitting(true);
+      await onConfirm({
+        nome: nomeTrimmed,
+        telefone: formattedToApi,
+      });
+      setNome("");
+      setTelefone("");
+      onClose();
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Erro ao cadastrar");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-lg shadow-md max-w-md w-full overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+        <div className="bg-blue-600 px-6 py-4 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-white/10 rounded-lg">
+              <Bike className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg leading-tight">
+                Novo Entregador
+              </h3>
+              <p className="text-blue-100 text-xs">
+                Cadastre um motoboy para entregas
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {errorMsg && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg font-medium">
+              {errorMsg}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Nome Completo *
+            </label>
+            <div className="relative">
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                required
+                value={nome}
+                onChange={handleNomeChange}
+                placeholder="Ex: Carlos Silva"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Informe nome e sobrenome do entregador (não são permitidos
+              números).
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+              Telefone / WhatsApp *
+            </label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="tel"
+                required
+                value={telefone}
+                onChange={handleTelefoneChange}
+                placeholder="(81) 98888-7777"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              O número será utilizado para o contato operacional e
+              identificação.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-bold rounded-lg shadow-md shadow-blue-600/20 hover:shadow-md transition "
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>{submitting ? "Salvando..." : "Salvar Entregador"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
