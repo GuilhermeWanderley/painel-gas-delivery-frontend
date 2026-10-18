@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Flame, LogIn, Lock, User, AlertCircle } from "lucide-react";
+import { LogIn, Lock, User, AlertCircle } from "lucide-react";
 import { validarCredenciais } from "../../services/api";
 import { salvarCredenciais } from "../../services/auth";
 
@@ -36,18 +36,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onSuccess }) => {
         autoComplete="on"
       >
         {/* Marca */}
-        <div className="flex items-center gap-2.5 mb-6">
-          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0">
-            <Flame className="w-5 h-5 fill-white" />
-          </div>
-          <div className="leading-none">
-            <h1 className="font-semibold text-[15px] leading-none text-slate-900 tracking-tight">
-              Binho do Gás
-            </h1>
-            <span className="text-[11px] leading-none text-slate-500">
-              Painel de Gestão
-            </span>
-          </div>
+        <div className="flex justify-center mb-6">
+          <img
+            src="/logo-full.png"
+            alt="Binho do Gás"
+            className="h-20 w-auto"
+          />
         </div>
 
         <h2 className="page-title mb-1">Acessar o painel</h2>

@@ -6,7 +6,7 @@ import {
   formatCPF,
   formatTimeAgo,
 } from "../../utils/formatters";
-import { PaymentBadge, PaymentStatusBadge } from "../common/PaymentBadge";
+import { PaymentBadge } from "../common/PaymentBadge";
 import { OrigemBadge } from "../common/OrigemBadge";
 import {
   User,
@@ -168,7 +168,6 @@ export const PedidoCard: React.FC<PedidoCardProps> = ({
 
         <div className="min-w-0 flex flex-col items-end gap-1 text-right">
           <PaymentBadge forma={pedido.formaPagamento} />
-          <PaymentStatusBadge status={pedido.statusPagamento} />
           {pedido.precisaTrocoPara && (
             <div className="tnum text-[11px] font-medium text-slate-500 flex items-center justify-end gap-1">
               <Banknote className="w-3 h-3 text-slate-400" />

@@ -1,13 +1,12 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, Headset, Mic, MessageCircle, UserRound, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Headset, Mic, MessageCircle, UserRound, X } from "lucide-react";
 import { apiService, getErrorMessage } from "../../services/api";
 import type { MotivoTransbordo, Transbordo } from "../../types";
 import { formatJid, formatTimeAgo } from "../../utils/formatters";
-import { tocarBipe } from "../../utils/beep";
 import { useToast } from "../common/ToastContext";
 
-const ATENDIMENTOS_QUERY_KEY = ["atendimentos-pendentes"] as const;
+export const ATENDIMENTOS_QUERY_KEY = ["atendimentos-pendentes"] as const;
 
 const MOTIVO_CONFIG: Record<
   MotivoTransbordo,
@@ -17,79 +16,22 @@ const MOTIVO_CONFIG: Record<
   AUDIO: { label: "Enviou áudio", badgeClass: "badge-neutral", Icon: Mic },
 };
 
-/**
- * Alerta de atendimento humano: barra slim no topo do conteúdo (não bloqueia
- * o kanban) + painel lateral com a lista. Toca um bipe só na transição 0 → >0.
- */
-export const AtendimentoAlerta: React.FC = () => {
-  const [aberto, setAberto] = useState(false);
-
-  const { data: pendentes = [] } = useQuery({
-    queryKey: ATENDIMENTOS_QUERY_KEY,
-    queryFn: () => apiService.getAtendimentosPendentes(),
-    refetchInterval: 10_000,
-    // O atendente costuma deixar o painel em outra aba: o alerta precisa
-    // continuar chegando (e apitando) mesmo sem foco.
-    refetchIntervalInBackground: true,
-    staleTime: 0,
-  });
-
-  const total = pendentes.length;
-
-  // Bipe apenas na transição 0 → >0 (não a cada polling).
-  const totalAnterior = useRef(0);
-  useEffect(() => {
-    if (totalAnterior.current === 0 && total > 0) void tocarBipe();
-    totalAnterior.current = total;
-  }, [total]);
-
-  return (
-    <>
-      {total > 0 && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="sticky top-[57px] z-30 bg-danger-soft border-b border-danger-line text-danger"
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-11 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 min-w-0 text-[13px] font-medium">
-              <BellRing className="w-4 h-4 shrink-0" />
-              <span className="truncate">
-                <strong className="tnum font-semibold">{total}</strong>{" "}
-                {total === 1
-                  ? "atendimento aguardando"
-                  : "atendimentos aguardando"}
-              </span>
-            </div>
-            <button
-              id="btn-ver-atendimentos"
-              onClick={() => setAberto(true)}
-              className="btn h-8 px-3 bg-surface border-danger-line text-danger hover:bg-white"
-            >
-              Ver
-            </button>
-          </div>
-        </div>
-      )}
-
-      <PainelAtendimentos
-        aberto={aberto}
-        pendentes={pendentes}
-        onFechar={() => setAberto(false)}
-      />
-    </>
-  );
-};
-
-// ---------------------------------------------------------------------------
-
-interface PainelProps {
+interface AtendimentoAlertaProps {
   aberto: boolean;
-  pendentes: Transbordo[];
   onFechar: () => void;
+  pendentes: Transbordo[];
 }
 
-function PainelAtendimentos({ aberto, pendentes, onFechar }: PainelProps) {
+/**
+ * Painel lateral com a lista de atendimentos que o robô não conseguiu
+ * reconhecer. A contagem e o bipe vivem em `useAtendimentosPendentes`; aqui
+ * só existe a gaveta, aberta pelo sino da navbar.
+ */
+export const AtendimentoAlerta: React.FC<AtendimentoAlertaProps> = ({
+  aberto,
+  onFechar,
+  pendentes,
+}) => {
   // Re-renderiza a cada minuto para o "há N min" andar sozinho.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -162,7 +104,7 @@ function PainelAtendimentos({ aberto, pendentes, onFechar }: PainelProps) {
       </aside>
     </div>
   );
-}
+};
 
 // ---------------------------------------------------------------------------
 

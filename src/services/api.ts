@@ -3,6 +3,9 @@ import type {
   Pedido,
   Entregador,
   OrderStatus,
+  OrderType,
+  PaymentMethod,
+  StatusPagamento,
   ApiErrorResponse,
   CaixaTurno,
   CaixaAtualResponse,
@@ -168,6 +171,23 @@ export const resetMockData = () => {
 
 // ---- SERVICE API METHODS ----
 
+/** Transições de pagamento PIX aceitas por PUT /api/admin/pedidos/{id}/pagamento. */
+export type StatusPagamentoAcao =
+  | "COMPROVANTE_ENVIADO"
+  | "CONFIRMADO"
+  | "ESTORNADO";
+
+/** Corpo do POST /api/admin/pedidos (lançamento manual pelo painel). */
+export interface NovoPedidoPayload {
+  telefone: string;
+  nome: string;
+  cpf?: string;
+  tipoPedido: OrderType;
+  enderecoEntrega: string;
+  formaPagamento: PaymentMethod;
+  precisaTrocoPara?: number;
+}
+
 export const apiService = {
   // Pedidos
   async getPedidos(statusFilter?: OrderStatus): Promise<Pedido[]> {
@@ -187,6 +207,36 @@ export const apiService = {
     const response = await axiosClient.get<Pedido[]>("/api/admin/pedidos", {
       params,
     });
+    return response.data;
+  },
+
+  /**
+   * Pedidos do caixa ABERTO (somenteTurnoAtual=true).
+   * Se o caixa estiver fechado o backend devolve lista vazia — o kanban
+   * fica no estado vazio, sem perder o histórico da lista completa.
+   */
+  async getPedidosDoTurno(): Promise<Pedido[]> {
+    if (isMockEnabled()) {
+      await new Promise((r) => setTimeout(r, 200));
+      return getStoredMockPedidos();
+    }
+
+    const response = await axiosClient.get<Pedido[]>("/api/admin/pedidos", {
+      params: { somenteTurnoAtual: true },
+    });
+    return response.data;
+  },
+
+  /** Pedidos de um caixa já fechado (consulta do histórico). */
+  async getPedidosDoCaixa(caixaId: number): Promise<Pedido[]> {
+    if (isMockEnabled()) {
+      await new Promise((r) => setTimeout(r, 200));
+      return getStoredMockPedidos();
+    }
+
+    const response = await axiosClient.get<Pedido[]>(
+      `/api/admin/caixa/${caixaId}/pedidos`,
+    );
     return response.data;
   },
 
@@ -321,6 +371,74 @@ export const apiService = {
     }
 
     await axiosClient.put(`/api/admin/pedidos/${pedidoId}/cancelar`);
+  },
+
+  // ---- Pagamento (PIX) ----
+  async atualizarStatusPagamento(
+    pedidoId: number,
+    status: StatusPagamentoAcao,
+  ): Promise<void> {
+    if (isMockEnabled()) {
+      await new Promise((r) => setTimeout(r, 250));
+      const pedidos = getStoredMockPedidos();
+      const pedido = pedidos.find((p) => p.id === pedidoId);
+      if (!pedido) throw new Error("Pedido não encontrado");
+      const statusPagamento: StatusPagamento = status;
+      pedido.statusPagamento = statusPagamento;
+      pedido.dataAtualizacao = new Date().toISOString();
+      saveStoredMockPedidos(pedidos);
+      return;
+    }
+
+    await axiosClient.put(`/api/admin/pedidos/${pedidoId}/pagamento`, {
+      status,
+    });
+  },
+
+  // ---- Lançamento manual de pedido ----
+  async criarPedido(data: NovoPedidoPayload): Promise<Pedido> {
+    if (isMockEnabled()) {
+      await new Promise((r) => setTimeout(r, 250));
+      const pedidos = getStoredMockPedidos();
+      const agora = new Date().toISOString();
+      const novo: Pedido = {
+        id: Date.now(),
+        cliente: {
+          id: Date.now(),
+          nome: data.nome,
+          telefone: data.telefone,
+          cpf: data.cpf ?? null,
+          enderecoPadrao: data.enderecoEntrega,
+          dataCadastro: agora,
+        },
+        status:
+          data.tipoPedido === "GAS_DO_POVO"
+            ? "AGUARDANDO_VALIDACAO_CPF"
+            : "PENDENTE",
+        tipoPedido: data.tipoPedido,
+        formaPagamento: data.formaPagamento,
+        statusPagamento: data.formaPagamento === "PIX" ? "AGUARDANDO" : "NAO_APLICAVEL",
+        origem: "MANUAL",
+        precisaTrocoPara:
+          data.formaPagamento === "DINHEIRO"
+            ? (data.precisaTrocoPara ?? null)
+            : null,
+        enderecoEntrega: data.enderecoEntrega,
+        valorTotal: 0,
+        dataCriacao: agora,
+        dataAtualizacao: agora,
+        entregador: null,
+      };
+      pedidos.push(novo);
+      saveStoredMockPedidos(pedidos);
+      return novo;
+    }
+
+    const response = await axiosClient.post<Pedido>(
+      "/api/admin/pedidos",
+      data,
+    );
+    return response.data;
   },
 
   // Entregadores
