@@ -7,6 +7,8 @@ import type {
   CaixaTurno,
   CaixaAtualResponse,
   Configuracao,
+  Transbordo,
+  ContadorAtendimentos,
 } from "../types";
 import { cabecalhoAutorizacao, notificarNaoAutorizado, basicPara } from "./auth";
 import { INITIAL_MOCK_ENTREGADORES, INITIAL_MOCK_PEDIDOS } from "./mockData";
@@ -478,6 +480,30 @@ export const apiService = {
     const response = await axiosClient.put<Configuracao>(
       "/api/admin/configuracao",
       cfg,
+    );
+    return response.data;
+  },
+
+  // ---- Atendimento humano (transbordo) ----
+  async getAtendimentosPendentes(): Promise<Transbordo[]> {
+    if (isMockEnabled()) return [];
+    const response = await axiosClient.get<Transbordo[]>(
+      "/api/admin/atendimento/pendentes",
+    );
+    return response.data;
+  },
+
+  async getContadorAtendimentos(): Promise<ContadorAtendimentos> {
+    if (isMockEnabled()) return { pendentes: 0 };
+    const response = await axiosClient.get<ContadorAtendimentos>(
+      "/api/admin/atendimento/pendentes/contador",
+    );
+    return response.data;
+  },
+
+  async atenderAtendimento(id: number): Promise<Transbordo> {
+    const response = await axiosClient.put<Transbordo>(
+      `/api/admin/atendimento/${id}/atender`,
     );
     return response.data;
   },

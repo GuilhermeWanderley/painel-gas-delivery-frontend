@@ -14,6 +14,7 @@ import { FechamentoCaixaView } from "./components/caixa/FechamentoCaixaView";
 import { DashboardMetrics } from "./components/metrics/DashboardMetrics";
 import { ConfiguracoesView } from "./components/config/ConfiguracoesView";
 import { LoginView } from "./components/auth/LoginView";
+import { AtendimentoAlerta } from "./components/atendimento/AtendimentoAlerta";
 import {
   estaAutenticado,
   EVENTO_NAO_AUTORIZADO,
@@ -447,6 +448,9 @@ function GasDeliveryApp() {
         onOpenSettings={() => setApiConfigOpen(true)}
         onLogout={sair}
       />
+
+      {/* Alerta de atendimento humano (barra slim + painel lateral) */}
+      <AtendimentoAlerta />
 
       {/* Aviso de caixa fechado (regra de negócio) */}
       {caixaFechado && !isOffline && (

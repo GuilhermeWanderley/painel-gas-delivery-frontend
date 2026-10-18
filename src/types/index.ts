@@ -97,3 +97,25 @@ export interface Configuracao {
   descontoQuarta: number;
   promocaoQuartaAtiva: boolean;
 }
+
+// ===================== ATENDIMENTO HUMANO (transbordo) =====================
+
+export type MotivoTransbordo = "ATENDENTE" | "AUDIO";
+
+export type StatusTransbordo = "PENDENTE" | "ATENDIDO" | "CANCELADO";
+
+export interface Transbordo {
+  id: number;
+  /** Pode vir como "5575...@s.whatsapp.net", "...@lid" ou só dígitos. */
+  telefone: string;
+  nome: string | null;
+  motivo: MotivoTransbordo;
+  status: StatusTransbordo;
+  /** ISO */
+  dataCriacao: string;
+  dataAtendimento: string | null;
+}
+
+export interface ContadorAtendimentos {
+  pendentes: number;
+}

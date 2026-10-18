@@ -25,6 +25,43 @@ export function formatPhone(phone?: string | null): string {
   return phone;
 }
 
+export interface JidFormatado {
+  /** Texto pronto para exibição. */
+  texto: string;
+  /** Só os dígitos do jid (pode ser vazio). */
+  digitos: string;
+  /**
+   * `@lid` é um identificador interno do WhatsApp, não um telefone: não dá
+   * para formatar nem abrir conversa por wa.me.
+   */
+  isLid: boolean;
+}
+
+/**
+ * Deriva um telefone legível de um remoteJid do WhatsApp.
+ * Aceita "5575999998888@s.whatsapp.net", "1234567890@lid" ou só dígitos.
+ */
+export function formatJid(jid?: string | null): JidFormatado {
+  if (!jid) return { texto: "Sem telefone", digitos: "", isLid: false };
+  const [usuario, dominio = ""] = jid.split("@");
+  const digitos = usuario.split(":")[0].replace(/\D/g, "");
+  const isLid = dominio.toLowerCase() === "lid";
+
+  if (isLid || !digitos) {
+    return { texto: "Número oculto pelo WhatsApp", digitos, isLid: true };
+  }
+  // 55 + DDD + 8 dígitos (WhatsApp às vezes omite o nono dígito)
+  if (digitos.length === 12 && digitos.startsWith("55")) {
+    return {
+      texto: `(${digitos.slice(2, 4)}) ${digitos.slice(4, 8)}-${digitos.slice(8)}`,
+      digitos,
+      isLid,
+    };
+  }
+  const formatado = formatPhone(digitos);
+  return { texto: formatado, digitos, isLid };
+}
+
 export function formatCPF(cpf?: string | null): string {
   if (!cpf) return "Não informado";
   const clean = cpf.replace(/\D/g, "");
