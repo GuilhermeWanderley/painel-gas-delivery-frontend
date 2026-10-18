@@ -15,6 +15,7 @@ import { DashboardMetrics } from "./components/metrics/DashboardMetrics";
 import { ConfiguracoesView } from "./components/config/ConfiguracoesView";
 import { LoginView } from "./components/auth/LoginView";
 import { AtendimentoAlerta } from "./components/atendimento/AtendimentoAlerta";
+import { useAtendimentosPendentes } from "./hooks/useAtendimentosPendentes";
 import {
   estaAutenticado,
   EVENTO_NAO_AUTORIZADO,
@@ -52,6 +53,8 @@ function GasDeliveryApp() {
   const qc = useQueryClient();
 
   const [currentTab, setCurrentTab] = useState<NavTab>("kanban");
+  // Gaveta de atendimentos pendentes, aberta pelo sino da navbar.
+  const [atendimentosAberto, setAtendimentosAberto] = useState(false);
   // Diferencia "atualização manual" (mostra o spinner no topo) do polling
   // automático silencioso, para o painel não parecer que está sempre carregando.
   const [manualRefresh, setManualRefresh] = useState(false);
@@ -89,6 +92,25 @@ function GasDeliveryApp() {
     queryFn: () => apiService.getPedidos(),
     // Atualização automática silenciosa: os pedidos chegam sozinhos na tela,
     // sem o operador precisar clicar em "Atualizar" e sem travar a interface.
+    // `placeholderData` mantém a lista anterior durante cada refetch (comportamento
+    // keepPreviousData): a query nunca volta para o estado "sem dados", então
+    // nenhum skeleton/spinner aparece nos ciclos automáticos de 5s.
+    placeholderData: (anterior) => anterior,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
+  });
+
+  // Kanban: apenas os pedidos do caixa ABERTO (o backend devolve [] quando o
+  // caixa está fechado). A lista completa acima continua servindo a tabela,
+  // o histórico e as métricas.
+  const {
+    data: pedidosDoTurno = [],
+    isLoading: isLoadingPedidosDoTurno,
+    refetch: refetchPedidosDoTurno,
+  } = useQuery({
+    queryKey: ["pedidos-turno"],
+    queryFn: () => apiService.getPedidosDoTurno(),
+    placeholderData: (anterior) => anterior,
     refetchInterval: 5000,
     refetchIntervalInBackground: false,
   });
@@ -110,10 +132,17 @@ function GasDeliveryApp() {
     refetchIntervalInBackground: false,
   });
 
+  // Fonte única dos atendimentos pendentes (contagem do sino + bipe).
+  const { pendentes, total } = useAtendimentosPendentes();
+
   const refreshAll = async () => {
     setManualRefresh(true);
     try {
-      await Promise.all([refetchPedidos(), refetchEntregadores()]);
+      await Promise.all([
+        refetchPedidos(),
+        refetchPedidosDoTurno(),
+        refetchEntregadores(),
+      ]);
       qc.invalidateQueries({ queryKey: ["entregadores-ativos"] });
       toast.info("Pedidos e entregadores atualizados.", "Atualizado");
     } finally {
@@ -124,9 +153,14 @@ function GasDeliveryApp() {
   // Helper para invalidar e recarregar
   const invalidateAndRefresh = async () => {
     qc.invalidateQueries({ queryKey: ["pedidos"] });
+    qc.invalidateQueries({ queryKey: ["pedidos-turno"] });
     qc.invalidateQueries({ queryKey: ["entregadores"] });
     qc.invalidateQueries({ queryKey: ["entregadores-ativos"] });
-    await Promise.all([refetchPedidos(), refetchEntregadores()]);
+    await Promise.all([
+      refetchPedidos(),
+      refetchPedidosDoTurno(),
+      refetchEntregadores(),
+    ]);
   };
 
   // ---- AÇÕES DO FLUXO DE NEGÓCIOS ----
@@ -426,14 +460,24 @@ function GasDeliveryApp() {
     );
   };
 
-  // Contadores para o header
-  const pedidosAguardando = pedidos.filter(
+  // Contadores para o header — refletem o turno atual (o que o kanban mostra)
+  const pedidosAguardando = pedidosDoTurno.filter(
     (p) => p.status === "AGUARDANDO_VALIDACAO_CPF",
   ).length;
-  const pedidosProntos = pedidos.filter((p) => p.status === "PENDENTE").length;
+  const pedidosProntos = pedidosDoTurno.filter(
+    (p) => p.status === "PENDENTE",
+  ).length;
 
   const isOffline = !!pedidosError && !isMockEnabled();
   const caixaFechado = !!caixaStatus && !caixaStatus.aberto;
+
+  // Carregamento inicial: a lista completa abastece tabela/métricas e a do
+  // turno abastece o kanban. Só bloqueia enquanto a lista relevante está vazia.
+  const carregandoPainel =
+    (isLoadingPedidos && pedidos.length === 0) ||
+    (currentTab === "kanban" &&
+      isLoadingPedidosDoTurno &&
+      pedidosDoTurno.length === 0);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900">
@@ -447,10 +491,16 @@ function GasDeliveryApp() {
         onRefresh={refreshAll}
         onOpenSettings={() => setApiConfigOpen(true)}
         onLogout={sair}
+        atendimentosPendentes={total}
+        onOpenAtendimentos={() => setAtendimentosAberto(true)}
       />
 
-      {/* Alerta de atendimento humano (barra slim + painel lateral) */}
-      <AtendimentoAlerta />
+      {/* Painel lateral de atendimentos (aberto pelo sino da navbar) */}
+      <AtendimentoAlerta
+        aberto={atendimentosAberto}
+        onFechar={() => setAtendimentosAberto(false)}
+        pendentes={pendentes}
+      />
 
       {/* Aviso de caixa fechado (regra de negócio) */}
       {caixaFechado && !isOffline && (
@@ -489,7 +539,10 @@ function GasDeliveryApp() {
                 <span>Ativar Modo Demonstração (Testar Agora)</span>
               </button>
               <button
-                onClick={() => refetchPedidos()}
+                onClick={() => {
+                  refetchPedidos();
+                  refetchPedidosDoTurno();
+                }}
                 className="btn btn-icon h-8 w-8 bg-transparent border-amber-300 text-amber-900"
                 title="Tentar reconectar"
               >
@@ -502,7 +555,7 @@ function GasDeliveryApp() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        {isLoadingPedidos && pedidos.length === 0 ? (
+        {carregandoPainel ? (
           <div className="h-96 flex flex-col items-center justify-center text-center">
             <div className="w-12 h-12 rounded-full border-4 border-blue-600 border-t-transparent animate-spin mb-4" />
             <h3 className="font-bold text-slate-800 text-lg">
@@ -516,7 +569,7 @@ function GasDeliveryApp() {
           <>
             {currentTab === "kanban" && (
               <KanbanBoard
-                pedidos={pedidos}
+                pedidos={pedidosDoTurno}
                 onAprovarCpf={handleAprovarCpf}
                 onReprovarCpf={handleReprovarCpf}
                 onDespachar={handleOpenDespachar}

@@ -1,6 +1,13 @@
 import React, { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Pedido } from "../../types";
 import { PedidoCard } from "./PedidoCard";
+import {
+  apiService,
+  type NovoPedidoPayload,
+} from "../../services/api";
+import { useToast } from "../common/ToastContext";
+import { NovoPedidoModal } from "../modals/NovoPedidoModal";
 import {
   Search,
   Flame,
@@ -10,6 +17,7 @@ import {
   Archive,
   AlertCircle,
   Filter,
+  Plus,
 } from "lucide-react";
 
 interface KanbanBoardProps {
@@ -33,6 +41,22 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [filterType, setFilterType] = useState<
     "ALL" | "GAS_DO_POVO" | "NORMAL"
   >("ALL");
+  const [novoPedidoOpen, setNovoPedidoOpen] = useState(false);
+
+  const qc = useQueryClient();
+  const toast = useToast();
+
+  const handleCriarPedido = async (data: NovoPedidoPayload) => {
+    await apiService.criarPedido(data);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["pedidos"] }),
+      qc.invalidateQueries({ queryKey: ["pedidos-turno"] }),
+    ]);
+    toast.success(
+      `Pedido de ${data.nome} lançado com sucesso!`,
+      "Novo pedido",
+    );
+  };
 
   // Filtragem dos pedidos
   const filteredPedidos = useMemo(() => {
@@ -96,29 +120,40 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium shrink-0 mr-1">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Tipo:</span>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium shrink-0 mr-1">
+              <Filter className="w-3.5 h-3.5" />
+              <span>Tipo:</span>
+            </div>
+            <button
+              onClick={() => setFilterType("ALL")}
+              className={`filter-btn ${filterType === "ALL" ? "filter-btn-active" : ""}`}
+            >
+              <span className="tnum">Todos ({pedidos.length})</span>
+            </button>
+            <button
+              onClick={() => setFilterType("GAS_DO_POVO")}
+              className={`filter-btn ${filterType === "GAS_DO_POVO" ? "filter-btn-active" : ""}`}
+            >
+              <Flame className="w-3.5 h-3.5" />
+              Gás do Povo
+            </button>
+            <button
+              onClick={() => setFilterType("NORMAL")}
+              className={`filter-btn ${filterType === "NORMAL" ? "filter-btn-active" : ""}`}
+            >
+              Normal
+            </button>
           </div>
           <button
-            onClick={() => setFilterType("ALL")}
-            className={`filter-btn ${filterType === "ALL" ? "filter-btn-active" : ""}`}
+            type="button"
+            onClick={() => setNovoPedidoOpen(true)}
+            className="btn btn-primary shrink-0 ml-auto md:ml-0"
+            title="Lançar um pedido manualmente"
           >
-            <span className="tnum">Todos ({pedidos.length})</span>
-          </button>
-          <button
-            onClick={() => setFilterType("GAS_DO_POVO")}
-            className={`filter-btn ${filterType === "GAS_DO_POVO" ? "filter-btn-active" : ""}`}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            Gás do Povo
-          </button>
-          <button
-            onClick={() => setFilterType("NORMAL")}
-            className={`filter-btn ${filterType === "NORMAL" ? "filter-btn-active" : ""}`}
-          >
-            Normal
+            <Plus className="w-4 h-4" />
+            <span>Novo pedido</span>
           </button>
         </div>
       </div>
@@ -305,6 +340,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           </div>
         </div>
       </div>
+
+      <NovoPedidoModal
+        isOpen={novoPedidoOpen}
+        onClose={() => setNovoPedidoOpen(false)}
+        onConfirm={handleCriarPedido}
+      />
     </div>
   );
 };

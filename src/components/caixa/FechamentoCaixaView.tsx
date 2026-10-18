@@ -3,9 +3,14 @@ import { apiService, getErrorMessage } from "../../services/api";
 import type {
   CaixaAtualResponse,
   CaixaTurno,
+  Pedido,
   ResumoCaixaEntregador,
 } from "../../types";
-import { formatCurrency, formatDateTime } from "../../utils/formatters";
+import {
+  formatCurrency,
+  formatDateTime,
+  STATUS_CONFIG,
+} from "../../utils/formatters";
 import { useToast } from "../common/ToastContext";
 import {
   Wallet,
@@ -17,6 +22,8 @@ import {
   CreditCard,
   Building,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
   Lock,
 } from "lucide-react";
 
@@ -32,6 +39,14 @@ export const FechamentoCaixaView: React.FC<FechamentoCaixaViewProps> = ({
   const [historico, setHistorico] = useState<CaixaTurno[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+
+  // Histórico: expansão dos pedidos de um caixa fechado.
+  const [caixaExpandido, setCaixaExpandido] = useState<number | null>(null);
+  const [pedidosPorCaixa, setPedidosPorCaixa] = useState<
+    Record<number, Pedido[]>
+  >({});
+  const [caixasCarregando, setCaixasCarregando] = useState<number[]>([]);
+  const [erroPedidosCaixa, setErroPedidosCaixa] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -84,6 +99,32 @@ export const FechamentoCaixaView: React.FC<FechamentoCaixaViewProps> = ({
   };
 
   const handlePrint = () => window.print();
+
+  // Abre/fecha a lista de pedidos de um caixa do histórico. Os pedidos são
+  // buscados uma única vez por caixa e ficam em cache no estado local.
+  const alternarPedidosCaixa = async (caixaId: number) => {
+    if (caixaExpandido === caixaId) {
+      setCaixaExpandido(null);
+      return;
+    }
+
+    setCaixaExpandido(caixaId);
+    setErroPedidosCaixa(null);
+
+    if (pedidosPorCaixa[caixaId]) return;
+
+    setCaixasCarregando((anterior) => [...anterior, caixaId]);
+    try {
+      const pedidos = await apiService.getPedidosDoCaixa(caixaId);
+      setPedidosPorCaixa((anterior) => ({ ...anterior, [caixaId]: pedidos }));
+    } catch (e) {
+      setErroPedidosCaixa(getErrorMessage(e));
+    } finally {
+      setCaixasCarregando((anterior) =>
+        anterior.filter((id) => id !== caixaId),
+      );
+    }
+  };
 
   const aberto = !!atual?.aberto;
   const caixa = atual?.caixa ?? null;
@@ -186,56 +227,155 @@ export const FechamentoCaixaView: React.FC<FechamentoCaixaViewProps> = ({
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {historico.map((c) => (
-              <div key={c.id} className="p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                  <div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-md ${
-                        c.status === "ABERTO"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      Caixa #{c.id} ·{" "}
-                      {c.status === "ABERTO" ? "Aberto" : "Fechado"}
-                    </span>
-                    <div className="text-xs text-slate-500 mt-1.5">
-                      {formatDateTime(c.dataAbertura)} →{" "}
-                      {formatDateTime(c.dataFechamento)}
+            {historico.map((c) => {
+              const expandido = caixaExpandido === c.id;
+              const pedidosCaixa = pedidosPorCaixa[c.id];
+              const carregandoCaixa = caixasCarregando.includes(c.id);
+
+              return (
+                <div key={c.id} className="p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-md ${
+                          c.status === "ABERTO"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        Caixa #{c.id} ·{" "}
+                        {c.status === "ABERTO" ? "Aberto" : "Fechado"}
+                      </span>
+                      <div className="text-xs text-slate-500 mt-1.5">
+                        {formatDateTime(c.dataAbertura)} →{" "}
+                        {formatDateTime(c.dataFechamento)}
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Total do turno
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {formatCurrency(c.totalGeral)}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {c.quantidadePedidos} pedido(s) · Dinheiro{" "}
+                        {formatCurrency(c.totalDinheiro)} · Cartão{" "}
+                        {formatCurrency(c.totalCartao)} · Pix{" "}
+                        {formatCurrency(c.totalPix)}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-left sm:text-right">
-                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      Total do turno
+
+                  {/* Relatório congelado por entregador */}
+                  {c.resumo.length > 0 && (
+                    <div className="mt-3 bg-slate-50 rounded-lg p-3 border border-slate-200/60">
+                      <div className="text-xs font-bold text-slate-600 mb-2">
+                        Relatório congelado por entregador:
+                      </div>
+                      <div className="space-y-1.5">
+                        {c.resumo.map((l) => (
+                          <LinhaResumo key={l.id} linha={l} />
+                        ))}
+                      </div>
                     </div>
-                    <div className="text-2xl font-black text-slate-900">
-                      {formatCurrency(c.totalGeral)}
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      {c.quantidadePedidos} pedido(s) · Dinheiro{" "}
-                      {formatCurrency(c.totalDinheiro)} · Cartão{" "}
-                      {formatCurrency(c.totalCartao)} · Pix{" "}
-                      {formatCurrency(c.totalPix)}
-                    </div>
+                  )}
+
+                  {/* Pedidos do caixa (carregados sob demanda) */}
+                  <div className="mt-3">
+                    <button
+                      onClick={() => alternarPedidosCaixa(c.id)}
+                      className="btn btn-secondary h-8 px-3 text-xs"
+                      aria-expanded={expandido}
+                    >
+                      {expandido ? (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      )}
+                      {expandido
+                        ? "Ocultar pedidos"
+                        : `Ver pedidos (${c.quantidadePedidos})`}
+                    </button>
+
+                    {expandido && (
+                      <div className="mt-3 card overflow-hidden">
+                        <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-slate-600">
+                            Pedidos do caixa #{c.id}
+                          </span>
+                          {carregandoCaixa && (
+                            <span className="text-[11px] text-slate-400">
+                              Carregando...
+                            </span>
+                          )}
+                        </div>
+
+                        {erroPedidosCaixa ? (
+                          <div className="px-3 py-4 text-xs text-rose-700">
+                            {erroPedidosCaixa}
+                          </div>
+                        ) : carregandoCaixa ? (
+                          <div className="px-3 py-4 text-xs text-slate-400">
+                            Buscando pedidos do caixa...
+                          </div>
+                        ) : !pedidosCaixa || pedidosCaixa.length === 0 ? (
+                          <div className="px-3 py-4 text-xs text-slate-400 italic">
+                            Nenhum pedido registrado neste caixa.
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
+                                  <th className="py-2 px-3">ID</th>
+                                  <th className="py-2 px-3">Cliente</th>
+                                  <th className="py-2 px-3">Tipo</th>
+                                  <th className="py-2 px-3">Valor</th>
+                                  <th className="py-2 px-3">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {pedidosCaixa.map((p) => {
+                                  const statusConf = STATUS_CONFIG[p.status];
+                                  return (
+                                    <tr key={p.id} className="hover:bg-slate-50">
+                                      <td className="py-2 px-3 font-mono font-bold text-slate-900">
+                                        #{p.id}
+                                      </td>
+                                      <td className="py-2 px-3 text-slate-700">
+                                        {p.cliente.nome}
+                                      </td>
+                                      <td className="py-2 px-3">
+                                        <span className="badge badge-neutral">
+                                          {p.tipoPedido === "GAS_DO_POVO"
+                                            ? "Gás do Povo"
+                                            : "Normal"}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-3 font-semibold text-slate-900">
+                                        {formatCurrency(p.valorTotal)}
+                                      </td>
+                                      <td className="py-2 px-3">
+                                        <span
+                                          className={`badge ${statusConf.badgeClass}`}
+                                        >
+                                          {statusConf.label}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Relatório congelado por entregador */}
-                {c.resumo.length > 0 && (
-                  <div className="mt-3 bg-slate-50 rounded-lg p-3 border border-slate-200/60">
-                    <div className="text-xs font-bold text-slate-600 mb-2">
-                      Relatório congelado por entregador:
-                    </div>
-                    <div className="space-y-1.5">
-                      {c.resumo.map((l) => (
-                        <LinhaResumo key={l.id} linha={l} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
