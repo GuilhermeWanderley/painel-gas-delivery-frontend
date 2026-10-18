@@ -44,14 +44,9 @@ VITE_API_BASE_URL=http://localhost:8080
 
 ### Login
 
-O painel exige autenticação (HTTP Basic). Em desenvolvimento:
-
-| Usuário | Senha |
-|---|---|
-| `admin` | `binho-admin` |
-
-A troca é feita no `.env` do **backend** (`APP_ADMIN_USUARIO` /
-`APP_ADMIN_SENHA`) — veja o `PRODUCAO.md`. O botão **Sair** fica no topo.
+O painel exige autenticação (HTTP Basic). As credenciais vêm do `.env` do
+**backend** (`APP_ADMIN_USUARIO` / `APP_ADMIN_SENHA`) — veja o `PRODUCAO.md`.
+O botão **Sair** fica no topo.
 
 > Sem backend? O **Modo Simulação** permite navegar com dados falsos no
 > navegador, sem servidor nenhum.
