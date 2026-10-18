@@ -8,6 +8,7 @@ import {
   STATUS_CONFIG,
 } from "../../utils/formatters";
 import { PaymentBadge, PaymentStatusBadge } from "../common/PaymentBadge";
+import { OrigemBadge } from "../common/OrigemBadge";
 import {
   Search,
   Download,
@@ -71,6 +72,7 @@ export const PedidosTable: React.FC<PedidosTableProps> = ({
       "Telefone",
       "CPF",
       "Tipo",
+      "Origem",
       "Status",
       "Forma Pagamento",
       "Status Pagamento",
@@ -86,6 +88,7 @@ export const PedidosTable: React.FC<PedidosTableProps> = ({
       p.cliente.telefone,
       p.cliente.cpf || "",
       p.tipoPedido,
+      p.origem ?? "",
       p.status,
       p.formaPagamento,
       p.statusPagamento ?? "",
@@ -231,16 +234,19 @@ export const PedidosTable: React.FC<PedidosTableProps> = ({
 
                     {/* Tipo */}
                     <td className="py-3 px-4">
-                      {isGasDoPovo ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-sm bg-slate-900 text-white border border-slate-900">
-                          <Flame className="w-3 h-3" />
-                          Gás do Povo
-                        </span>
-                      ) : (
-                        <span className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-100 text-slate-700">
-                          Normal
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {isGasDoPovo ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-sm bg-slate-900 text-white border border-slate-900">
+                            <Flame className="w-3 h-3" />
+                            Gás do Povo
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-100 text-slate-700">
+                            Normal
+                          </span>
+                        )}
+                        <OrigemBadge origem={pedido.origem} />
+                      </div>
                     </td>
 
                     {/* Status */}

@@ -19,6 +19,8 @@ export type StatusPagamento =
   | "A_ESTORNAR"
   | "ESTORNADO";
 
+export type OrigemPedido = "BOT" | "MANUAL";
+
 export interface Cliente {
   id: number;
   telefone: string;
@@ -43,6 +45,7 @@ export interface Pedido {
   tipoPedido: OrderType;
   formaPagamento: PaymentMethod;
   statusPagamento: StatusPagamento;
+  origem: OrigemPedido;
   precisaTrocoPara?: number | null;
   enderecoEntrega: string;
   valorTotal: number;

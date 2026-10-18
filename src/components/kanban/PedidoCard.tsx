@@ -7,6 +7,7 @@ import {
   formatTimeAgo,
 } from "../../utils/formatters";
 import { PaymentBadge, PaymentStatusBadge } from "../common/PaymentBadge";
+import { OrigemBadge } from "../common/OrigemBadge";
 import {
   User,
   MapPin,
@@ -66,6 +67,7 @@ export const PedidoCard: React.FC<PedidoCardProps> = ({
           ) : (
             <span className="badge">Normal</span>
           )}
+          <OrigemBadge origem={pedido.origem} />
         </div>
 
         <div className="tnum flex items-center gap-1 text-[11px] text-slate-400">
